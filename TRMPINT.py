@@ -1,4 +1,4 @@
-import turbosensei as fs
+#import turbosensei as fs
 from numba import jit
 import numpy as np
 from scipy.linalg import lstsq
@@ -54,7 +54,12 @@ flat=0
 afone = 1
 afzero = 0
 
+#FORC file read 
 
+def FORCfile():
+    fc = FileChooser()
+    display(fc)
+    return fc
 
 
 #### file parsing routines
