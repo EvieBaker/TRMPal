@@ -11,7 +11,7 @@ setuptools.setup(
     description="TRMP package",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/sampleproject", #link to github page - need to make account ready for this bit
+    url="https://github.com/EvieBaker/TRMPal", #link to github page - need to make account ready for this bit
     packages=setuptools.find_packages(), #auto pick packages
     classifiers=[
         "Programming Language :: Python :: 3",
