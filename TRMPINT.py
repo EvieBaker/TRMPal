@@ -1002,6 +1002,24 @@ def create_arrays(X, maxSF):
     X['max_FORC_len'] = max_FORC_len
     return(X)
 
+
+def nan_values2(X):
+    H_A = X['H_A']
+    Hr_A = X['Hr_A']
+    M_A = X['M_A']
+    for i in range(len(H_A)):
+        for j in range(len(Hr_A[0])):
+            if (H_A[i][j] == 0.0):
+                H_A[i][j] = 'NaN'
+                Hr_A[i][j] = 'NaN'
+                M_A[i][j] = 'NaN'
+                
+
+    X['H_A'] = H_A
+    X['Hr_A'] = Hr_A
+    X['M_A'] = M_A
+    return(X)
+
 def calc_rho(X, SF):
     no_FORC = X['no_FORC']
     max_FORC_len = X['max_FORC_len']
@@ -1029,7 +1047,7 @@ def calc_rho(X, SF):
             if (H_A[i][j] > Hr_A[i][j]):
                 for h in range((-h1), (h2+1)): #loop over row in smoothing window
                     for k in range((-k1), (k2+1)): #loop over columns in smoothing window
-                        if ((j+h+k) > 0 and (j+k+h) <= (max_FORC_len-1) and (i+h) > 0 and (i+h) <= (no_FORC -1)): 
+                        if ((j+h+k) >= 0 and (j+k+h) < (max_FORC_len) and (i+h) >= 0 and (i+h) < (no_FORC)): 
                                 #if (M_A[i+h][j+h+k] != 0. and H_A[i+h][j+h+k] !=0 and Hr_A[i][j+h+k] != 0): #remved but this makes a difference to plot
                             A[cnt, 0] = 1.
                             A[cnt, 1] = Hr_A[i+h][j+k+h] - Hr_A[i][j]
@@ -1046,7 +1064,7 @@ def calc_rho(X, SF):
                 b = b[~np.isnan(b)]
                     #print('A no nan', A)
                     #print('b no nan', b)
-                if (len(A)>2): #min no. points to need to smooth over
+                if (len(A)>=2): #min no. points to need to smooth over
                         #cmatrix = np.matmul(np.transpose(A), A)
                     dmatrix, res, rank, s = lstsq(A,b)
                     Rho[SF][i][j] = (-1.*(dmatrix[5]))/2.
@@ -1553,8 +1571,10 @@ def plot_general_FORC_basic1(x, y, z, SF, sample_name):
     plt.contour(x, y, z, con, colors = 'k', fontsize=14)
     plt.xlabel('Hc (T)', fontsize=14)
     plt.ylabel('Hu (T)', fontsize=14)
-    plt.xlim(0, 0.1)
-    plt.ylim(-0.03, 0.04)
+    #plt.xlim(0, 0.1)
+    #plt.ylim(-0.03, 0.04)
+    plt.xlim(0, np.nanmax(x))
+    plt.ylim(np.nanmin(y), np.nanmax(y))
     plt.tick_params(axis='both', which='major', labelsize=14)
     #cbar = plt.colorbar(heatmap)
     #cbar.ax.set_yticklabels(['0','1','2','>3'])
