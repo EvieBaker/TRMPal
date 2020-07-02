@@ -1988,6 +1988,7 @@ def demag_data_mur(X):
     afnorm = af_nrm_n[0]/af_sirm_n[0] #only used for write out if want to use need to make in X
     #af_step = af_step/10.
     X['af_step'] = af_step
+    X['af_step'] = X['af_step']/10.
     X['af_nrm'] = af_nrm_n
     X['af_irm'] = af_sirm_n
     X['cntfield'] = cntfield
@@ -2308,7 +2309,7 @@ def sirm_test(V, X):
     sirm_p = sirmn[:ifield,:cntfield] #change 4 to no fields
 
     plt.plot(demagstep2, sirm_p[2], marker = 'o', color = 'r') #x = 22, y = 100
-
+    
     plt.plot(demagstep2, af_sirm_n_n, marker = 'o', color = 'b')        
     plt.ylabel('SIRM (normalized %)')
     plt.xlabel('af demag step')
