@@ -1296,17 +1296,43 @@ def plot_FORCinel(X, SF, sample_name):
     plt.title("rotated FORC diagram, sample '{0}'".format(sample_name))
     plt.show
     
+#new FWHM function
+def half_max_test(fwHu_c, fwRho_c, ym):
+    arr_L = np.where(fwRho_c == ym)[0]
+    L = arr_L[0]
+    half_ym = ym/2. #half max
+    b = L+1
+
+    while (b < len(fwRho_c)): #stop getting stuck in array
+
+        if(fwRho_c[b] < half_ym):
+            
+            break
+        b = b + 1
     
-def lin_interp(x, y, i, half):
-    return x[i] + (x[i+1] - x[i]) * ((half - y[i]) / (y[i+1] - y[i]))
-#@jit
-def half_max_x(x, y, ym):
-    half = ym/2.0
-    signs = np.sign(np.add(y, -half))
-    zero_crossings = (signs[0:-2] != signs[1:-1])
-    zero_crossings_i = np.where(zero_crossings)[0]
-    return [lin_interp(x, y, zero_crossings_i[0], half),
-            lin_interp(x, y, zero_crossings_i[1], half)]
+    top = fwRho_c[b-1] - fwRho_c[b]
+    bot = fwHu_c[b-1] - fwHu_c[b]
+   
+    mo_test = top/bot
+    r0 = fwHu_c[b] + ((half_ym - fwRho_c[b])/mo_test)
+   
+    u = L-1
+
+    while (u > 0): #stop getting stuck in array
+       
+        if (fwRho_c[u] < half_ym):
+            
+            break
+        u = u - 1
+    
+
+    m1 = (fwRho_c[u] - fwRho_c[u+1])/(fwHu_c[u] - fwHu_c[u+1])
+
+    r1 = fwHu_c[u+1] + ((half_ym - fwRho_c[u+1])/m1)
+  
+    fwhm = r1 - r0
+   
+    return fwhm, r0, r1
 
 #@jit
 def find_fwhm(X, SF, sample_name, fwhmlist): #do for 1 SF - 
@@ -1325,8 +1351,8 @@ def find_fwhm(X, SF, sample_name, fwhmlist): #do for 1 SF -
     fwRho = np.array(fwRho)
     fwHu = fwHu[~np.isnan(fwHu)]
     fwRho = fwRho[~np.isnan(fwRho)] #have my arrays for fwhm calc
-    r0 = -1
-    r1 = 1
+    r0 = 1
+    r1 = -1
 
     
     #here adjust size 
@@ -1342,34 +1368,39 @@ def find_fwhm(X, SF, sample_name, fwhmlist): #do for 1 SF -
     plt.show
     m_rho_a = np.sort(fwRho_c)
     i = 1
-    while ((r0 <0) or (r1 > 0)): #opposte to FWHM crossing 0 
+    while ((r0 >0) or (r1 < 0)): #opposte to FWHM crossing 0 
         ym = m_rho_a[-i]
+        print('i', i, 'max rho in zone', ym)
         # find the two crossing points
         try:
-            hmx = half_max_x(fwHu_c,fwRho_c, ym)
-            
-            r0 = hmx[0]
-            r1 = hmx[1]
-            fwhm = hmx[0] - hmx[1]
+           # hmx = half_max_x(fwHu_c,fwRho_c, ym)
+            fwhm, r0, r1 = half_max_test(fwHu_c, fwRho_c, ym)
+            #r0 = hmx[0]
+            #r1 = hmx[1]
+            print('r0', r0, 'r1', r1)
+            #fwhm = r0 - r1
         except:
             print('Error in calculating FWHM for SF %',SF)
             pass
         
-        if (i >3):
+        if (i >5):
             print('too noisy')
             fwhm = 'Nan'
+            r0 = 'NaN'
+            r1 = 'NaN'
             break
         i+=1
   
     fwhmlist.append(fwhm)
 
     half = max(fwRho_c)/2.0
-    plt.plot(hmx, [half, half], label = SF)
+    plt.plot([r0, r1], [half, half], label = SF)
     plt.xlabel('Hu')
     plt.ylabel('Rho')
     plt.legend()
     
     plt.title("FWHM plot for sample '{0}'".format(sample_name))
+    plt.savefig('fwhm_graph.pdf')
     plt.show
     
 
@@ -1393,16 +1424,17 @@ def plot_fwhm(SFlist, fwhmlist, X):
             polySF.append(float(SFlist[i]))
 
     plt.scatter(polySF, polyfwhm)
-    plt.xlim(0,5.3)
-    plt.ylim(0, 0.045)
+   # plt.xlim(0,5.3)
+   # plt.ylim(0, 0.045)
 
     b, m = polyfit(polySF, polyfwhm, 1)
  
     plt.xlabel('SF')
     plt.ylabel('FWHM')
     plt.plot(st_line_SFlist, b + m * st_line_SFlist, '-')
+    #plt.savefig('test_fwhm.pdf')
     plt.show 
-      
+    plt.savefig('test_fwhm.pdf') 
     Hu = X['Hu']
 
     i=0
@@ -1431,8 +1463,8 @@ def plot_fwhm(SFlist, fwhmlist, X):
   
  
     print ("Is this what you just said?", sf_choose)
-    print(sf_choose)
-
+    print('sf_choose', sf_choose)
+    print('fwhmlist - take sf_choose-2 value)', fwhmlist)
     X['sf_choose'] = sf_choose
     Hu_0 = Hu*(b/fwhmlist[sf_choose-2])
     sf_correct = (b/fwhmlist[sf_choose-2])
@@ -1872,6 +1904,9 @@ def af_irm_file():
 
     return(af_i)
     
+    
+
+    
 def demag_data(X):
     af_step = []
     af_nrm_n = []
@@ -1894,6 +1929,49 @@ def demag_data(X):
         line = myline.split(' ') #split into elements by spaces
     
         af_sirm_n.append(float(line[3])) 
+        #print(af_nrm)
+
+    af_irm_data.close()
+
+    #no af steps
+    cntfield = len(af_step)
+
+    af_step = np.array(af_step)
+    af_nrm_n = np.array(af_nrm_n)
+    af_sirm_n = np.array(af_sirm_n)
+
+    af_sirm_n = af_sirm_n[:len(af_nrm_n)]
+
+    afnorm = af_nrm_n[0]/af_sirm_n[0] #only used for write out if want to use need to make in X
+    #af_step = af_step/10.
+    X['af_step'] = af_step
+    X['af_nrm'] = af_nrm_n
+    X['af_irm'] = af_sirm_n
+    X['cntfield'] = cntfield
+    return(X)
+    
+def demag_data_mur(X):
+    af_step = []
+    af_nrm_n = []
+    af_sirm_n = []
+    af_step_irm = []
+
+    af_nrm_data = open(X['af_n_fn'], "r") #write file
+    for myline1 in af_nrm_data:
+        line = myline1.split('\t') #split into elements by tabs
+
+        af_step.append(float(line[2])) 
+       # print('af_step', af_step)
+        af_nrm_n.append(float(line[1])) 
+        #print('af_nrm_n', af_nrm_n)
+
+    af_nrm_data.close()
+
+    af_irm_data = open(X['af_i_fn'], "r") #write file
+    for myline in af_irm_data:
+        line = myline.split('\t') #split into elements by tab
+    
+        af_sirm_n.append(float(line[1])) 
         #print(af_nrm)
 
     af_irm_data.close()
